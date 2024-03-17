@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram import F
+from questions import quiz_data
 
 # Включаем логирование, чтобы не пропустить важные сообщения
 logging.basicConfig(level=logging.INFO)
@@ -19,25 +20,8 @@ dp = Dispatcher()
 # Зададим имя базы данных
 DB_NAME = 'quiz_bot.db'
 
+
 # Структура квиза
-quiz_data = [
-    {
-        'question': 'Что такое Python?',
-        'options': ['Язык программирования', 'Тип данных', 'Музыкальный инструмент', 'Змея на английском'],
-        'correct_option': 0
-    },
-    {
-        'question': 'Какой тип данных используется для хранения целых чисел?',
-        'options': ['int', 'float', 'str', 'natural'],
-        'correct_option': 0
-    },
-    {
-        'question': 'Какой тип данных используется для хранения строковых значений?',
-        'options': ['int', 'float', 'str', 'natural'],
-        'correct_option': 2
-    },
-    # Добавьте другие вопросы
-]
 
 
 # Функция для генерации клавиатуры с вариантами ответов
