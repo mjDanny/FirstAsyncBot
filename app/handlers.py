@@ -41,6 +41,7 @@ async def right_answer(callback: types.CallbackQuery):
         message_id=callback.message.message_id,  # Идентификатор сообщения
         reply_markup=None  # Удаляем клавиатуру
     )
+    await update_quiz_result(callback.from_user.id, True)  # создание таблицы счета
 
     # Отправляем сообщение с подтверждением правильного ответа
     await callback.message.answer("Верно!")
@@ -92,6 +93,30 @@ async def wrong_answer(callback: types.CallbackQuery):
         await callback.message.answer("Это был последний вопрос. Квиз завершен!")
 
 
+async def update_quiz_result(user_id, is_correct):
+    # Получаем результат квиза из бд
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute('SELECT correct_answers, total_questions FROM quiz_results WHERE user_id = (?)',
+                              (user_id,)) as cursor:
+            results = await cursor.fetchone()
+            if results is not None:
+                correct_answers, total_questions = results
+            else:
+                correct_answers, total_questions = 0, 0
+
+    # Обновляем количество ответов
+    if is_correct:
+        correct_answers += 1
+    total_questions += 1
+
+    # Сохраняем результат в бд
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute(
+            'INSERT OR REPLACE INTO quiz_results (user_id, correct_answers, total_questions) VALUES (?, ?, ?)',
+            (user_id, correct_answers, total_questions))
+        await db.commit()
+
+
 # Хэндлер на команду /start
 @router.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -101,6 +126,25 @@ async def cmd_start(message: types.Message):
 
     # Приветствуем пользователя и отправляем сообщение с клавиатурой
     await message.answer("Добро пожаловать в квиз!", reply_markup=builder.as_markup(resize_keyboard=True))
+
+
+# Хэндлер на /stats
+@router.message(Command("stats"))
+async def cmd_stats(messasge: types.Message):
+    user_id = messasge.from_user.id
+
+    # Получение статистики квиза из бд
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute('SELECT correct_answers, total_questions FROM quiz_results WHERE user_id = (?)',
+                              (user_id,)) as cursor:
+            results = await cursor.fetchone()
+            if results is not None:
+                correct_answers, total_questions = results
+                percentage = round(correct_answers / total_questions * 100, 2)
+                await messasge.answer(
+                    f"Ваша статистика:\nПравильных ответов: {correct_answers}\nВсего вопросов: {total_questions}\nПроцент правильных ответов: {percentage}%")
+            else:
+                await messasge.answer("Вы еще не проходили квиз")
 
 
 # Функция для получения текущего вопроса
@@ -160,6 +204,13 @@ async def update_quiz_index(user_id, index):
 @router.message(F.text == "Начать игру")
 @router.message(Command("quiz"))
 async def cmd_quiz(message: types.Message):
+    async with aiosqlite.connect(DB_NAME) as db:
+        # Создаем таблицу для результатов
+        await db.execute(
+            '''CREATE TABLE IF NOT EXISTS quiz_results (correct_answers INTEGER,
+    total_questions INTEGER,
+    user_id         INTEGER PRIMARY KEY
+                            NOT NULL)''')
     await message.answer(f"Давайте начнем квиз!")
     await new_quiz(message)
 
