@@ -70,7 +70,7 @@ async def wrong_answer(callback: types.CallbackQuery):
         message_id=callback.message.message_id,  # Идентификатор сообщения
         reply_markup=None  # Удаляем клавиатуру
     )
-
+    await update_quiz_result(callback.from_user.id, False)
     # Получаем индекс текущего вопроса из базы данных
     current_question_index = await get_quiz_index(callback.from_user.id)
 
@@ -108,7 +108,6 @@ async def update_quiz_result(user_id, is_correct):
     if is_correct:
         correct_answers += 1
     total_questions += 1
-
     # Сохраняем результат в бд
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute(
