@@ -59,6 +59,7 @@ async def right_answer(callback: types.CallbackQuery):
     else:
         # Если текущий вопрос последний, сообщаем об окончании квиза
         await callback.message.answer("Это был последний вопрос. Квиз завершен!")
+        #await cmd_stats(callback.message)
 
 
 # Хэндлер для обработки нажатия на кнопку с неправильным ответом
@@ -91,6 +92,7 @@ async def wrong_answer(callback: types.CallbackQuery):
     else:
         # Если текущий вопрос последний, сообщаем об окончании квиза
         await callback.message.answer("Это был последний вопрос. Квиз завершен!")
+        #await cmd_stats(callback.message)
 
 
 async def update_quiz_result(user_id, is_correct):
@@ -129,8 +131,8 @@ async def cmd_start(message: types.Message):
 
 # Хэндлер на /stats
 @router.message(Command("stats"))
-async def cmd_stats(messasge: types.Message):
-    user_id = messasge.from_user.id
+async def cmd_stats(message: types.Message):
+    user_id = message.from_user.id
 
     # Получение статистики квиза из бд
     async with aiosqlite.connect(DB_NAME) as db:
@@ -140,10 +142,10 @@ async def cmd_stats(messasge: types.Message):
             if results is not None:
                 correct_answers, total_questions = results
                 percentage = round(correct_answers / total_questions * 100, 2)
-                await messasge.answer(
+                await message.answer(
                     f"Ваша статистика:\nПравильных ответов: {correct_answers}\nВсего вопросов: {total_questions}\nПроцент правильных ответов: {percentage}%")
             else:
-                await messasge.answer("Вы еще не проходили квиз")
+                await message.answer("Вы еще не проходили квиз")
 
 
 # Функция для получения текущего вопроса
