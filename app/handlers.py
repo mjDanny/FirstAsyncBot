@@ -60,7 +60,9 @@ async def right_answer(callback: types.CallbackQuery):
         # Если текущий вопрос последний, сообщаем об окончании квиза
         await callback.message.answer("Это был последний вопрос. Квиз завершен!")
         correct_answers, total_questions = await update_quiz_result(callback.from_user.id, True)
-        await callback.message.answer(f"Вы ответили на {correct_answers} вопросов из {total_questions} правильно.")
+        await callback.message.answer(
+            f"Вы ответили на {correct_answers - 1} вопросов из {total_questions - 1} правильно.")  # Вычитаем 1 из total_questions
+        await update_quiz_result(callback.from_user.id, reset=True)  # Обнуляем статистику
 
 
 # Хэндлер для обработки нажатия на кнопку с неправильным ответом
@@ -93,10 +95,19 @@ async def wrong_answer(callback: types.CallbackQuery):
         # Если текущий вопрос последний, сообщаем об окончании квиза
         await callback.message.answer("Это был последний вопрос. Квиз завершен!")
         correct_answers, total_questions = await update_quiz_result(callback.from_user.id, False)
-        await callback.message.answer(f"Вы ответили на {correct_answers} вопросов из {total_questions} правильно.")
+        await callback.message.answer(
+            f"Вы ответили на {correct_answers - 1} вопросов из {total_questions - 1} правильно.")  # Вычитаем 1 из total_questions
+        await update_quiz_result(callback.from_user.id, reset=True)  # Обнуляем статистику
 
 
-async def update_quiz_result(user_id, is_correct):
+async def update_quiz_result(user_id, is_correct=True, reset=False):
+    if reset:
+        async with aiosqlite.connect(DB_NAME) as db:
+            await db.execute('UPDATE quiz_results SET correct_answers = 0, total_questions = 0 WHERE user_id = (?)',
+                             (user_id,))
+            await db.commit()
+        return 0, 0
+
     async with aiosqlite.connect(DB_NAME) as db:
         async with db.execute('SELECT correct_answers, total_questions FROM quiz_results WHERE user_id = (?)',
                               (user_id,)) as cursor:
