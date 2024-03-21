@@ -61,7 +61,7 @@ async def right_answer(callback: types.CallbackQuery):
         await callback.message.answer("Это был последний вопрос. Квиз завершен!")
         correct_answers, total_questions = await update_quiz_result(callback.from_user.id, True)
         await callback.message.answer(
-            f"Вы ответили на {correct_answers - 1} вопросов из {total_questions - 1} правильно.")  # Вычитаем 1 из total_questions
+            f"Вы ответили на {correct_answers - 1} вопросов из {total_questions - 1} правильно.")
         await update_quiz_result(callback.from_user.id, reset=True)  # Обнуляем статистику
 
 
@@ -96,7 +96,7 @@ async def wrong_answer(callback: types.CallbackQuery):
         await callback.message.answer("Это был последний вопрос. Квиз завершен!")
         correct_answers, total_questions = await update_quiz_result(callback.from_user.id, False)
         await callback.message.answer(
-            f"Вы ответили на {correct_answers - 1} вопросов из {total_questions - 1} правильно.")  # Вычитаем 1 из total_questions
+            f"Вы ответили на {correct_answers - 1} вопросов из {total_questions - 1} правильно.")
         await update_quiz_result(callback.from_user.id, reset=True)  # Обнуляем статистику
 
 
