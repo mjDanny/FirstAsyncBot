@@ -59,7 +59,8 @@ async def right_answer(callback: types.CallbackQuery):
     else:
         # Если текущий вопрос последний, сообщаем об окончании квиза
         await callback.message.answer("Это был последний вопрос. Квиз завершен!")
-        #await cmd_stats(callback.message)
+        correct_answers, total_questions = await update_quiz_result(callback.from_user.id, True)
+        await callback.message.answer(f"Вы ответили на {correct_answers} вопросов из {total_questions} правильно.")
 
 
 # Хэндлер для обработки нажатия на кнопку с неправильным ответом
@@ -74,7 +75,6 @@ async def wrong_answer(callback: types.CallbackQuery):
     await update_quiz_result(callback.from_user.id, False)
     # Получаем индекс текущего вопроса из базы данных
     current_question_index = await get_quiz_index(callback.from_user.id)
-
     # Определяем правильный ответ
     correct_option = quiz_data[current_question_index]['correct_option']
 
@@ -92,11 +92,11 @@ async def wrong_answer(callback: types.CallbackQuery):
     else:
         # Если текущий вопрос последний, сообщаем об окончании квиза
         await callback.message.answer("Это был последний вопрос. Квиз завершен!")
-        #await cmd_stats(callback.message)
+        correct_answers, total_questions = await update_quiz_result(callback.from_user.id, False)
+        await callback.message.answer(f"Вы ответили на {correct_answers} вопросов из {total_questions} правильно.")
 
 
 async def update_quiz_result(user_id, is_correct):
-    # Получаем результат квиза из бд
     async with aiosqlite.connect(DB_NAME) as db:
         async with db.execute('SELECT correct_answers, total_questions FROM quiz_results WHERE user_id = (?)',
                               (user_id,)) as cursor:
@@ -106,16 +106,17 @@ async def update_quiz_result(user_id, is_correct):
             else:
                 correct_answers, total_questions = 0, 0
 
-    # Обновляем количество ответов
     if is_correct:
         correct_answers += 1
     total_questions += 1
-    # Сохраняем результат в бд
+
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute(
             'INSERT OR REPLACE INTO quiz_results (user_id, correct_answers, total_questions) VALUES (?, ?, ?)',
             (user_id, correct_answers, total_questions))
         await db.commit()
+
+    return correct_answers, total_questions
 
 
 # Хэндлер на команду /start
